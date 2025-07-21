@@ -58,6 +58,7 @@ interface Artist extends CosmicObject {
     };
     contact_email?: string;
     location?: string;
+    social_links?: string;
   };
 }
 

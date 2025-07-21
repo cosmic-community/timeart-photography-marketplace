@@ -25,7 +25,6 @@ export default function PhotoBackground({ photo }: PhotoBackgroundProps) {
         src={optimizedUrl}
         alt={photo.metadata.title || 'Featured artwork'}
         className="w-full h-full object-cover"
-        priority
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/30" />
     </div>

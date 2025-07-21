@@ -7,6 +7,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: 'hsl(var(--primary))',
+        'primary-foreground': 'hsl(var(--primary-foreground))',
+        border: 'hsl(var(--border))',
         'cosmic-dark': '#11171A',
         'cosmic-dark-hover': '#1a2326',
       },

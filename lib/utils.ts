@@ -105,39 +105,57 @@ export function parseSocialLinks(socialLinksString?: string): Array<{
       if (!url.startsWith('http')) {
         url = `https://${url}`
       }
-      links.push({
-        platform: 'Website',
-        handle: new URL(url).hostname,
-        url
-      })
+      
+      // Add proper null check before creating URL object
+      if (url) {
+        try {
+          const urlObj = new URL(url)
+          const hostname = urlObj.hostname
+          links.push({
+            platform: 'Website',
+            handle: hostname,
+            url
+          })
+        } catch (error) {
+          // If URL parsing fails, use the original url as handle
+          links.push({
+            platform: 'Website',
+            handle: url,
+            url
+          })
+        }
+      }
       continue
     }
     
     // Generic social link pattern
     const genericMatch = part.match(/([^:]+):\s*(.+)/)
     if (genericMatch) {
-      const platform = genericMatch[1].trim()
-      const handle = genericMatch[2].trim()
-      let url = handle
+      const platform = genericMatch[1]?.trim()
+      const handle = genericMatch[2]?.trim()
       
-      // Try to construct URL if it doesn't start with http
-      if (!url.startsWith('http')) {
-        if (platform.toLowerCase().includes('twitter')) {
-          url = `https://twitter.com/${handle.replace('@', '')}`
-        } else if (platform.toLowerCase().includes('linkedin')) {
-          url = `https://linkedin.com/in/${handle}`
-        } else if (platform.toLowerCase().includes('behance')) {
-          url = `https://behance.net/${handle}`
-        } else {
-          url = `https://${handle}`
+      if (platform && handle) {
+        let url = handle
+        
+        // Try to construct URL if it doesn't start with http
+        if (!url.startsWith('http')) {
+          if (platform.toLowerCase().includes('twitter')) {
+            url = `https://twitter.com/${handle.replace('@', '')}`
+          } else if (platform.toLowerCase().includes('linkedin')) {
+            url = `https://linkedin.com/in/${handle}`
+          } else if (platform.toLowerCase().includes('behance')) {
+            url = `https://behance.net/${handle}`
+          } else {
+            url = `https://${handle}`
+          }
         }
+        
+        links.push({
+          platform,
+          handle,
+          url
+        })
       }
-      
-      links.push({
-        platform,
-        handle,
-        url
-      })
     }
   }
   

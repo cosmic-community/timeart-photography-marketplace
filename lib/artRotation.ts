@@ -21,7 +21,9 @@ export async function getTodaysFeaturedPhoto(): Promise<FeaturedPhoto | null> {
     // Use modulo to cycle through available photos
     const photoIndex = daysSinceEpoch % photos.length
     
-    return photos[photoIndex]
+    // Add explicit check for undefined
+    const selectedPhoto = photos[photoIndex]
+    return selectedPhoto || null
   } catch (error) {
     console.error('Error getting today\'s featured photo:', error)
     return null
@@ -76,10 +78,14 @@ export async function getUpcomingPhotos(days: number = 7): Promise<Array<{ date:
       const daysSinceEpoch = Math.floor(date.getTime() / (1000 * 60 * 60 * 24))
       const photoIndex = daysSinceEpoch % photos.length
       
-      upcoming.push({
-        date,
-        photo: photos[photoIndex]
-      })
+      // Add explicit check for undefined before using the photo
+      const selectedPhoto = photos[photoIndex]
+      if (selectedPhoto) {
+        upcoming.push({
+          date,
+          photo: selectedPhoto
+        })
+      }
     }
 
     return upcoming

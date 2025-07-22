@@ -90,11 +90,13 @@ export function parseSocialLinks(socialLinksString?: string): Array<{
     const instagramMatch = part.match(/(?:Instagram:\s*)?@([a-zA-Z0-9._]+)/i)
     if (instagramMatch) {
       const handle = instagramMatch[1]
-      links.push({
-        platform: 'Instagram',
-        handle: `@${handle}`,
-        url: `https://instagram.com/${handle}`
-      })
+      if (handle) {
+        links.push({
+          platform: 'Instagram',
+          handle: `@${handle}`,
+          url: `https://instagram.com/${handle}`
+        })
+      }
       continue
     }
     
@@ -102,7 +104,7 @@ export function parseSocialLinks(socialLinksString?: string): Array<{
     const websiteMatch = part.match(/(?:Website:\s*)?(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i)
     if (websiteMatch) {
       let url = websiteMatch[1]
-      if (!url.startsWith('http')) {
+      if (url && !url.startsWith('http')) {
         url = `https://${url}`
       }
       

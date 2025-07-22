@@ -1,4 +1,5 @@
 import { createBucketClient } from '@cosmicjs/sdk'
+import { getTodaysFeaturedPhoto } from './artRotation'
 import type { 
   FeaturedPhoto, 
   Artist, 
@@ -19,20 +20,12 @@ function hasStatus(error: unknown): error is { status: number } {
   return typeof error === 'object' && error !== null && 'status' in error;
 }
 
-// Fetch current featured photo from site settings
+// Fetch current featured photo using daily rotation
 export async function getCurrentFeaturedPhoto(): Promise<FeaturedPhoto | null> {
   try {
-    const response = await cosmic.objects.findOne({
-      type: 'site-settings',
-      slug: 'main-site-configuration'
-    }).depth(2)
-
-    const settings = response.object as SiteSettings
-    return settings.metadata?.current_featured_photo || null
+    // Use the daily rotation system instead of manual setting
+    return await getTodaysFeaturedPhoto()
   } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
-      return null
-    }
     console.error('Error fetching current featured photo:', error)
     return null
   }

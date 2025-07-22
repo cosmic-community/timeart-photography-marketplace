@@ -7,7 +7,7 @@ import ArtistSubmissionButton from '@/components/ArtistSubmissionButton'
 import Footer from '@/components/Footer'
 import LoadingOverlay from '@/components/LoadingOverlay'
 
-export const revalidate = 3600 // Revalidate every hour
+export const revalidate = 3600 // Revalidate every hour to check for new daily photo
 
 async function HomePage() {
   const [featuredPhoto, siteSettings] = await Promise.all([
@@ -40,6 +40,11 @@ async function HomePage() {
         style={{ backgroundColor: `rgba(0, 0, 0, ${(100 - overlayOpacity) / 100})` }}
       >
         <TimeDisplay format={timeFormat} />
+      </div>
+
+      {/* Daily Rotation Indicator */}
+      <div className="absolute top-4 left-4 text-white/60 text-sm bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+        Daily Featured Art
       </div>
 
       {/* Interactive Elements */}

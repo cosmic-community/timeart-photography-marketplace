@@ -45,11 +45,16 @@ export default function PurchaseButton({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create checkout session')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create checkout session')
       }
 
       const { url } = await response.json()
-      window.location.href = url
+      if (url) {
+        window.location.href = url
+      } else {
+        throw new Error('No checkout URL received')
+      }
     } catch (error) {
       console.error('Purchase error:', error)
       alert('There was an error processing your purchase. Please try again.')
@@ -66,7 +71,7 @@ export default function PurchaseButton({
       onClick={handlePurchase}
       disabled={loading}
       className={`
-        flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200
+        flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm
         ${type === 'digital' 
           ? 'bg-blue-600 hover:bg-blue-700 text-white' 
           : 'bg-green-600 hover:bg-green-700 text-white'
@@ -76,16 +81,11 @@ export default function PurchaseButton({
       `}
     >
       <IconComponent 
-        size={18} 
+        size={16} 
         className={loading ? 'animate-spin' : ''}
       />
       {loading ? 'Processing...' : (
-        <>
-          {type === 'digital' ? 'Buy Digital' : 'Order Print'}
-          <span className="ml-1 font-bold">
-            {formatPrice(price)}
-          </span>
-        </>
+        type === 'digital' ? 'Buy Now' : 'Order Print'
       )}
     </button>
   )

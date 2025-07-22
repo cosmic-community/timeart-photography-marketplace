@@ -108,7 +108,6 @@ export function parseSocialLinks(socialLinksString?: string): Array<{
         url = `https://${url}`
       }
       
-      // Fix the TypeScript error by adding proper null check
       if (url) {
         try {
           const urlObj = new URL(url)

@@ -16,6 +16,8 @@ export async function getTodaysFeaturedPhoto(): Promise<FeaturedPhoto | null> {
 
     // Use today's date to determine which photo to show
     const today = new Date()
+    // Reset time to midnight to ensure consistent daily rotation
+    today.setHours(0, 0, 0, 0)
     const daysSinceEpoch = Math.floor(today.getTime() / (1000 * 60 * 60 * 24))
     
     // Use modulo to cycle through available photos
@@ -50,7 +52,7 @@ export async function updateCurrentFeaturedPhoto(): Promise<void> {
       }
     })
 
-    console.log(`Updated featured photo to: ${todaysPhoto.title}`)
+    console.log(`Updated featured photo to: ${todaysPhoto.metadata.title}`)
   } catch (error) {
     console.error('Error updating current featured photo:', error)
   }
@@ -74,6 +76,7 @@ export async function getUpcomingPhotos(days: number = 7): Promise<Array<{ date:
     for (let i = 0; i < days; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
+      date.setHours(0, 0, 0, 0)
       
       const daysSinceEpoch = Math.floor(date.getTime() / (1000 * 60 * 60 * 24))
       const photoIndex = daysSinceEpoch % photos.length

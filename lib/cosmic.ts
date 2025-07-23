@@ -1,50 +1,29 @@
 import { createBucketClient } from '@cosmicjs/sdk'
-import { getTodaysFeaturedPhoto } from './artRotation'
-import type { 
-  FeaturedPhoto, 
-  Artist, 
-  SiteSettings, 
-  ArtistApplication,
-  CosmicResponse 
-} from '@/types'
+import type { FeaturedPhoto, Artist, SiteSettings } from '@/types'
 
+// Initialize Cosmic client
 export const cosmic = createBucketClient({
-  bucketSlug: process.env.COSMIC_BUCKET_SLUG as string,
-  readKey: process.env.COSMIC_READ_KEY as string,
-  writeKey: process.env.COSMIC_WRITE_KEY as string,
-  apiEnvironment: 'staging'
+  bucketSlug: process.env.COSMIC_BUCKET_SLUG || '',
+  readKey: process.env.COSMIC_READ_KEY || '',
+  writeKey: process.env.COSMIC_WRITE_KEY || ''
 })
 
-// Simple error helper for Cosmic SDK
-function hasStatus(error: unknown): error is { status: number } {
-  return typeof error === 'object' && error !== null && 'status' in error;
-}
-
-// Fetch current featured photo using daily rotation
-export async function getCurrentFeaturedPhoto(): Promise<FeaturedPhoto | null> {
-  try {
-    // Use the daily rotation system instead of manual setting
-    return await getTodaysFeaturedPhoto()
-  } catch (error) {
-    console.error('Error fetching current featured photo:', error)
-    return null
-  }
-}
-
-// Fetch all active featured photos
+/**
+ * Get all featured photos that are active for sale
+ */
 export async function getFeaturedPhotos(): Promise<FeaturedPhoto[]> {
   try {
     const response = await cosmic.objects
-      .find({
-        type: 'featured-photos',
-        'metadata.is_active': true
-      })
+      .find({ type: 'featured-photos' })
       .props(['id', 'title', 'slug', 'metadata'])
       .depth(1)
-
-    return response.objects as FeaturedPhoto[]
+    
+    // Filter for active photos and properly type the response
+    const photos = response.objects as FeaturedPhoto[]
+    return photos.filter(photo => photo.metadata.is_active === true)
   } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
+    // Handle 404 errors (no objects found) by returning empty array
+    if ((error as any)?.status === 404) {
       return []
     }
     console.error('Error fetching featured photos:', error)
@@ -52,37 +31,64 @@ export async function getFeaturedPhotos(): Promise<FeaturedPhoto[]> {
   }
 }
 
-// Fetch specific featured photo by slug
-export async function getFeaturedPhoto(slug: string): Promise<FeaturedPhoto | null> {
+/**
+ * Get current featured photo - uses daily rotation algorithm instead of site settings
+ */
+export async function getCurrentFeaturedPhoto(): Promise<FeaturedPhoto | null> {
   try {
-    const response = await cosmic.objects.findOne({
-      type: 'featured-photos',
-      slug
-    }).depth(1)
-
-    return response.object as FeaturedPhoto
-  } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
+    // Get all active photos for rotation
+    const photos = await getFeaturedPhotos()
+    
+    if (photos.length === 0) {
       return null
     }
-    console.error('Error fetching featured photo:', error)
+
+    // Use today's date to determine which photo to show
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset to midnight for consistent daily rotation
+    const daysSinceEpoch = Math.floor(today.getTime() / (1000 * 60 * 60 * 24))
+    
+    // Use modulo to cycle through available photos
+    const photoIndex = daysSinceEpoch % photos.length
+    
+    return photos[photoIndex] || null
+  } catch (error) {
+    console.error('Error getting current featured photo:', error)
     return null
   }
 }
 
-// Fetch all active artists
+/**
+ * Get a specific featured photo by slug
+ */
+export async function getFeaturedPhotoBySlug(slug: string): Promise<FeaturedPhoto | null> {
+  try {
+    const response = await cosmic.objects
+      .findOne({ type: 'featured-photos', slug })
+      .props(['id', 'title', 'slug', 'metadata'])
+      .depth(1)
+    
+    return response.object as FeaturedPhoto
+  } catch (error) {
+    console.error('Error fetching featured photo by slug:', error)
+    return null
+  }
+}
+
+/**
+ * Get all artists
+ */
 export async function getArtists(): Promise<Artist[]> {
   try {
     const response = await cosmic.objects
-      .find({
-        type: 'artists',
-        'metadata.status': 'active'
-      })
+      .find({ type: 'artists' })
       .props(['id', 'title', 'slug', 'metadata'])
-
+      .depth(1)
+    
     return response.objects as Artist[]
   } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
+    // Handle 404 errors (no objects found) by returning empty array
+    if ((error as any)?.status === 404) {
       return []
     }
     console.error('Error fetching artists:', error)
@@ -90,75 +96,59 @@ export async function getArtists(): Promise<Artist[]> {
   }
 }
 
-// Fetch specific artist by slug
-export async function getArtist(slug: string): Promise<Artist | null> {
-  try {
-    const response = await cosmic.objects.findOne({
-      type: 'artists',
-      slug
-    })
-
-    return response.object as Artist
-  } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
-      return null
-    }
-    console.error('Error fetching artist:', error)
-    return null
-  }
-}
-
-// Fetch site settings
+/**
+ * Get site settings
+ */
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   try {
-    const response = await cosmic.objects.findOne({
-      type: 'site-settings',
-      slug: 'main-site-configuration'
-    }).depth(2)
-
+    const response = await cosmic.objects
+      .findOne({ type: 'site-settings', slug: 'main-site-configuration' })
+      .props(['id', 'title', 'slug', 'metadata'])
+      .depth(1)
+    
     return response.object as SiteSettings
   } catch (error) {
-    if (hasStatus(error) && error.status === 404) {
-      return null
-    }
     console.error('Error fetching site settings:', error)
     return null
   }
 }
 
-// Submit artist application
+/**
+ * Submit an artist application
+ */
 export async function submitArtistApplication(data: {
-  name: string;
-  email: string;
-  artist_statement: string;
-  social_links?: string;
-  portfolio_samples: Array<{ url: string; imgix_url: string }>;
-  agreed_to_terms: boolean;
-}): Promise<ArtistApplication> {
+  name: string
+  email: string
+  portfolioSamples: File[]
+  artistStatement: string
+  socialLinks?: string
+}): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await cosmic.objects.insertOne({
+    // In a real implementation, you would handle file uploads here
+    // For now, we'll create the application without files
+    
+    await cosmic.objects.insertOne({
       title: `Application from ${data.name}`,
       type: 'artist-applications',
       metadata: {
         name: data.name,
         email: data.email,
-        artist_statement: data.artist_statement,
-        social_links: data.social_links || '',
-        portfolio_samples: data.portfolio_samples,
+        artist_statement: data.artistStatement,
+        social_links: data.socialLinks,
         status: 'submitted',
-        review_notes: '',
-        agreed_to_terms: data.agreed_to_terms
+        agreed_to_terms: true
       }
     })
-
-    return response.object as ArtistApplication
+    
+    return {
+      success: true,
+      message: 'Application submitted successfully!'
+    }
   } catch (error) {
     console.error('Error submitting artist application:', error)
-    throw new Error('Failed to submit application')
+    return {
+      success: false,
+      message: 'Failed to submit application. Please try again.'
+    }
   }
-}
-
-// Get bucket slug for UTM tracking
-export function getBucketSlug(): string {
-  return process.env.COSMIC_BUCKET_SLUG || 'timeart-marketplace'
 }

@@ -8,6 +8,11 @@ export const cosmic = createBucketClient({
   writeKey: process.env.COSMIC_WRITE_KEY || ''
 })
 
+// Export bucket slug for footer component
+export function getBucketSlug(): string {
+  return process.env.COSMIC_BUCKET_SLUG || ''
+}
+
 /**
  * Get all featured photos that are active for sale
  */
@@ -59,9 +64,9 @@ export async function getCurrentFeaturedPhoto(): Promise<FeaturedPhoto | null> {
 }
 
 /**
- * Get a specific featured photo by slug
+ * Get a specific featured photo by slug - renamed from getFeaturedPhoto
  */
-export async function getFeaturedPhotoBySlug(slug: string): Promise<FeaturedPhoto | null> {
+export async function getFeaturedPhoto(slug: string): Promise<FeaturedPhoto | null> {
   try {
     const response = await cosmic.objects
       .findOne({ type: 'featured-photos', slug })
@@ -73,6 +78,13 @@ export async function getFeaturedPhotoBySlug(slug: string): Promise<FeaturedPhot
     console.error('Error fetching featured photo by slug:', error)
     return null
   }
+}
+
+/**
+ * Get a specific featured photo by slug - alternative name for compatibility
+ */
+export async function getFeaturedPhotoBySlug(slug: string): Promise<FeaturedPhoto | null> {
+  return getFeaturedPhoto(slug)
 }
 
 /**
@@ -119,13 +131,18 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 export async function submitArtistApplication(data: {
   name: string
   email: string
-  portfolioSamples: File[]
-  artistStatement: string
+  portfolioSamples?: File[]
+  portfolio_samples?: Array<{ url: string; imgix_url: string }>
+  artist_statement: string
+  artistStatement?: string
+  social_links?: string
   socialLinks?: string
+  agreed_to_terms: boolean
 }): Promise<{ success: boolean; message: string }> {
   try {
-    // In a real implementation, you would handle file uploads here
-    // For now, we'll create the application without files
+    // Handle both property name formats for compatibility
+    const artistStatement = data.artist_statement || data.artistStatement || ''
+    const socialLinks = data.social_links || data.socialLinks || ''
     
     await cosmic.objects.insertOne({
       title: `Application from ${data.name}`,
@@ -133,10 +150,11 @@ export async function submitArtistApplication(data: {
       metadata: {
         name: data.name,
         email: data.email,
-        artist_statement: data.artistStatement,
-        social_links: data.socialLinks,
+        artist_statement: artistStatement,
+        social_links: socialLinks,
         status: 'submitted',
-        agreed_to_terms: true
+        agreed_to_terms: data.agreed_to_terms,
+        portfolio_samples: data.portfolio_samples || []
       }
     })
     

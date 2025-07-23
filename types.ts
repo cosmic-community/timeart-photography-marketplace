@@ -63,6 +63,7 @@ export interface Artist {
     }
     contact_email: string
     location?: string
+    social_links?: string
   }
 }
 
@@ -141,6 +142,23 @@ export interface Order {
     order_notes?: string
     customer_notes?: string
   }
+}
+
+// Component Props Types
+export interface ArtistSubmissionProps {
+  guidelines?: string
+  contactEmail?: string
+  onClose: () => void
+}
+
+export interface PhotoInfoProps {
+  photo: FeaturedPhoto
+  onClose: () => void
+}
+
+export interface TimeDisplayProps {
+  format?: '12hr' | '24hr'
+  className?: string
 }
 
 export type TimeFormat = '12hr' | '24hr'

@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react'
 import { X, Upload, Send, CheckCircle } from 'lucide-react'
 import { submitArtistApplication } from '@/lib/cosmic'
-import { isValidEmail } from '@/lib/utils'
 import type { ArtistSubmissionProps } from '@/types'
+
+// Utility function for email validation
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
 
 export default function ArtistSubmissionModal({ guidelines, contactEmail, onClose }: ArtistSubmissionProps) {
   const [formData, setFormData] = useState({
@@ -92,23 +97,19 @@ export default function ArtistSubmissionModal({ guidelines, contactEmail, onClos
     setIsSubmitting(true)
 
     try {
-      // In a real application, you would upload files first
-      // For this example, we'll simulate with placeholder URLs
-      const portfolioSamples = files.map((file, index) => ({
-        url: `https://example.com/uploads/${file.name}`,
-        imgix_url: `https://example.com/uploads/${file.name}?auto=format,compress`
-      }))
-
-      await submitArtistApplication({
+      const result = await submitArtistApplication({
         name: formData.name,
         email: formData.email,
-        artist_statement: formData.artist_statement,
+        artist_statement: formData.artist_statement, // Use correct property name
         social_links: formData.social_links || undefined,
-        portfolio_samples: portfolioSamples,
         agreed_to_terms: formData.agreed_to_terms
       })
 
-      setSubmitted(true)
+      if (result.success) {
+        setSubmitted(true)
+      } else {
+        setError(result.message || 'Failed to submit application. Please try again.')
+      }
     } catch (err) {
       setError('Failed to submit application. Please try again.')
       console.error('Submission error:', err)
